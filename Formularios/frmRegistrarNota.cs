@@ -1,6 +1,7 @@
 using SistemaRegistroNotas.Clases;
 using SistemaRegistroNotas.Repositorios;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 
 namespace SistemaRegistroNotas.Formularios;
 
@@ -63,27 +64,53 @@ public partial class frmRegistrarNota : Form
         formulario.Controls.Add(info);
         Controls.Add(formulario);
 
-        var gridPanel = new Panel { Dock = DockStyle.Fill, Padding = new Padding(24, 18, 24, 12), BackColor = fondo };
-        var gridTitulo = new Label { Text = "Estudiantes registrados", Font = new Font("Segoe UI", 13, FontStyle.Bold), ForeColor = azul, Dock = DockStyle.Top, Height = 36 };
+        var gridPanel = new Panel { Dock = DockStyle.Fill, Padding = new Padding(18, 8, 18, 12), BackColor = fondo, Margin = new Padding(0) };
+        gridPanel.Paint += (_, e) =>
+        {
+            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            var rect = new Rectangle(0, 0, gridPanel.Width - 1, gridPanel.Height - 1);
+            var shadowRect = Rectangle.Inflate(rect, 4, 4);
+
+            using var sombra = new SolidBrush(Color.FromArgb(20, 0, 0, 0));
+            using var fondoCard = new SolidBrush(Color.White);
+            using var borde = new Pen(Color.FromArgb(214, 224, 235), 1.2f);
+
+            e.Graphics.FillPath(sombra, CrearRutaRedondeada(shadowRect, 18));
+            e.Graphics.FillPath(fondoCard, CrearRutaRedondeada(rect, 18));
+            e.Graphics.DrawPath(borde, CrearRutaRedondeada(rect, 18));
+        };
+        gridPanel.Resize += (_, _) => AplicarEsquinasRedondeadas(gridPanel, 18);
+
+        var gridTitulo = new Label { Text = "Estudiantes registrados", Font = new Font("Segoe UI", 13, FontStyle.Bold), ForeColor = azul, Dock = DockStyle.Top, Height = 36, Padding = new Padding(8, 0, 0, 0) };
+        var gridBody = new Panel { Dock = DockStyle.Fill, BackColor = Color.White, Padding = new Padding(0), Margin = new Padding(0) };
+
         dgvRegistro = new DataGridView
         {
             Name = "dgvRegistro", Dock = DockStyle.Fill, ReadOnly = true, AllowUserToAddRows = false,
             AllowUserToDeleteRows = false, AutoGenerateColumns = true, MultiSelect = false,
             SelectionMode = DataGridViewSelectionMode.FullRowSelect, RowHeadersVisible = false,
             BackgroundColor = Color.White, BorderStyle = BorderStyle.None, AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-            EnableHeadersVisualStyles = false, ColumnHeadersHeight = 42, RowTemplate = { Height = 34 }
+            EnableHeadersVisualStyles = false, ColumnHeadersHeight = 42, RowTemplate = { Height = 34 },
+            Margin = new Padding(0), CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal,
+            GridColor = Color.FromArgb(220, 228, 236)
         };
         dgvRegistro.ColumnHeadersDefaultCellStyle.BackColor = azul;
         dgvRegistro.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
         dgvRegistro.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 9, FontStyle.Bold);
+        dgvRegistro.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
         dgvRegistro.DefaultCellStyle.SelectionBackColor = Color.FromArgb(214, 231, 248);
         dgvRegistro.DefaultCellStyle.SelectionForeColor = Color.FromArgb(30, 45, 60);
+        dgvRegistro.DefaultCellStyle.Font = new Font("Segoe UI", 9);
+        dgvRegistro.DefaultCellStyle.Padding = new Padding(4, 2, 4, 2);
         dgvRegistro.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(247, 249, 252);
         dgvRegistro.CellDoubleClick += DgvRegistro_CellDoubleClick;
-        gridPanel.Controls.Add(dgvRegistro);
+
+        gridBody.Controls.Add(dgvRegistro);
+        gridPanel.Controls.Add(gridBody);
         gridPanel.Controls.Add(gridTitulo);
         Controls.Add(gridPanel);
         gridPanel.BringToFront();
+        AplicarEsquinasRedondeadas(gridPanel, 18);
 
         lblEstado = new Label { Dock = DockStyle.Bottom, Height = 28, TextAlign = ContentAlignment.MiddleLeft, Padding = new Padding(24, 0, 0, 0), BackColor = Color.White, ForeColor = Color.DimGray, Text = "Doble clic en un registro para editarlo o eliminarlo." };
         Controls.Add(lblEstado);
@@ -97,6 +124,26 @@ public partial class frmRegistrarNota : Form
         parent.Controls.Add(lbl);
         parent.Controls.Add(tb);
         return tb;
+    }
+
+    private static GraphicsPath CrearRutaRedondeada(Rectangle rect, int radius)
+    {
+        var path = new GraphicsPath();
+        var r = Math.Max(radius, 0);
+
+        path.AddArc(rect.X, rect.Y, r * 2, r * 2, 180, 90);
+        path.AddArc(rect.Right - (r * 2), rect.Y, r * 2, r * 2, 270, 90);
+        path.AddArc(rect.Right - (r * 2), rect.Bottom - (r * 2), r * 2, r * 2, 0, 90);
+        path.AddArc(rect.X, rect.Bottom - (r * 2), r * 2, r * 2, 90, 90);
+        path.CloseFigure();
+        return path;
+    }
+
+    private static void AplicarEsquinasRedondeadas(Control control, int radio)
+    {
+        if (control.Width <= 0 || control.Height <= 0) return;
+        var rect = new Rectangle(0, 0, control.Width, control.Height);
+        control.Region = new Region(CrearRutaRedondeada(rect, radio));
     }
 
     private void FrmRegistrarNota_Load(object? sender, EventArgs e)
@@ -147,6 +194,7 @@ public partial class frmRegistrarNota : Form
                 NotaFinal = Math.Round(lab * 0.5m + parcial * 0.4m + asistencia * 0.1m, 2)
             };
             _repositorio.Insertar(estudiante);
+            MessageBox.Show("Estudiante registrado correctamente.", "Registro exitoso", MessageBoxButtons.OK, MessageBoxIcon.Information);
             CargarGrid();
             LimpiarControles();
             lblEstado.Text = "Estudiante guardado correctamente.";
@@ -169,7 +217,7 @@ public partial class frmRegistrarNota : Form
         try
         {
             dgvRegistro.DataSource = _repositorio.ObtenerTodos().Cast<EstudianteNota>()
-                .OrderBy(x => x.Apellido).ThenBy(x => x.Nombre).ToList();
+                .OrderBy(x => x.Id).ToList();
             if (dgvRegistro.Columns["Id"] != null) dgvRegistro.Columns["Id"].HeaderText = "ID";
             if (dgvRegistro.Columns["Nombre"] != null) dgvRegistro.Columns["Nombre"].HeaderText = "NOMBRE";
             if (dgvRegistro.Columns["Apellido"] != null) dgvRegistro.Columns["Apellido"].HeaderText = "APELLIDO";

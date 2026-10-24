@@ -129,6 +129,7 @@ public partial class frmRegistrarNotaCmd : Form
             _estudiante.Asistencia = asistencia;
             _estudiante.NotaFinal = Math.Round(lab * .5m + parcial * .4m + asistencia * .1m, 2);
             _repositorio.Actualizar(_estudiante);
+            MessageBox.Show("Los cambios del estudiante se guardaron correctamente.", "Actualización exitosa", MessageBoxButtons.OK, MessageBoxIcon.Information);
             DialogResult = DialogResult.OK;
             Close();
         }
@@ -145,6 +146,7 @@ public partial class frmRegistrarNotaCmd : Form
         try
         {
             _repositorio.Eliminar(_estudiante.Id);
+            MessageBox.Show($"El estudiante {_estudiante.Nombre} {_estudiante.Apellido} fue eliminado correctamente.", "Eliminación exitosa", MessageBoxButtons.OK, MessageBoxIcon.Information);
             DialogResult = DialogResult.OK;
             Close();
         }
