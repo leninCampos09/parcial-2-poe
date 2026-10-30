@@ -12,11 +12,16 @@ public partial class frmRegistrarNotaCmd : Form
     private TextBox txtLaboratorio = null!, txtParcial = null!, txtAsistencia = null!;
     private Label lblFinal = null!;
 
+    public frmRegistrarNotaCmd()
+    {
+        _estudiante = new EstudianteNota();
+        InitializeComponent();
+    }
+
     public frmRegistrarNotaCmd(EstudianteNota estudiante)
     {
         _estudiante = estudiante;
         InitializeComponent();
-        ConstruirInterfaz();
         CargarDatos();
     }
 
@@ -35,7 +40,7 @@ public partial class frmRegistrarNotaCmd : Form
         foreach (var tb in new[] { txtLaboratorio, txtParcial, txtAsistencia })
         {
             tb.KeyPress += Nota_KeyPress;
-            tb.TextChanged += (_, _) => CalcularFinal();
+            tb.TextChanged += CalcularFinalDesdeTexto;
         }
         lblFinal = new Label { Text = "Nota final: 0.00", Location = new Point(28, 420), AutoSize = true, ForeColor = Color.FromArgb(31, 78, 121), Font = new Font("Segoe UI", 11, FontStyle.Bold) };
         Controls.Add(lblFinal);
@@ -87,7 +92,7 @@ public partial class frmRegistrarNotaCmd : Form
         if (!decimal.TryParse(txtAsistencia.Text.Replace(',', '.'), System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out asistencia))
             return false;
 
-        return new[] { lab, parcial, asistencia }.All(n => n >= 0 && n <= 10);
+        return lab >= 0 && lab <= 10 && parcial >= 0 && parcial <= 10 && asistencia >= 0 && asistencia <= 10;
     }
 
     private void CalcularFinal()
@@ -96,6 +101,11 @@ public partial class frmRegistrarNotaCmd : Form
         if (LeerNotas(out var lab, out var parcial, out var asistencia))
             lblFinal.Text = $"Nota final: {Math.Round(lab * .5m + parcial * .4m + asistencia * .1m, 2):0.00}";
         else lblFinal.Text = "Nota final: —";
+    }
+
+    private void CalcularFinalDesdeTexto(object? sender, EventArgs e)
+    {
+        CalcularFinal();
     }
 
     private void Nota_KeyPress(object? sender, KeyPressEventArgs e)
